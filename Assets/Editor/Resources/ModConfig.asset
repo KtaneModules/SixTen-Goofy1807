@@ -11,10 +11,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 615501dbe4f3fe94fbf4b564abb10237, type: 3}
   m_Name: ModConfig
   m_EditorClassIdentifier: 
-  id: 
-  title: 
+  id: sixten
+  title: SixTen
   author: Goofy
-  description: 
+  description: Observe a series of 8-bit hexadecimal values and submit the correct
+    RGB values.
   version: 1.0
   outputFolder: build
-  previewImage: {fileID: 0}
+  previewImage: {fileID: 2800000, guid: c6956d304953157419577b39a7789894, type: 3}
