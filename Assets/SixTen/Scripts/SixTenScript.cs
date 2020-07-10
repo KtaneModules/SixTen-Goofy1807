@@ -414,11 +414,6 @@ public class SixTenScript : MonoBehaviour
     IEnumerator TwitchHandleForcedSolve()
     {
         Debug.LogFormat(@"[SixTen #{0}] Module was force-solved by TP!", moduleId);
-        if (!fast)
-        {
-            Speed[1].OnInteract();
-            yield return new WaitForSeconds(.1f);
-        }
 
         for (var i = 0; i < inputDone.Length; i++)
         {
@@ -426,13 +421,33 @@ public class SixTenScript : MonoBehaviour
                 continue;
             for (var j = 0; j < 3; j++)
             {
+                if (Mathf.Abs(knobInfo[j].Value - solution[rowIdentities[j]][i]) < 5f)
+                    Speed[0].OnInteract();
+                else
+                    Speed[1].OnInteract();
+                yield return new WaitForSeconds(.1f);
                 if (knobInfo[j].Value > solution[rowIdentities[j]][i] && knobInfo[j].Forwards)
+                {
                     RGBScreens[j].OnInteract();
+                    yield return new WaitForSeconds(.1f);
+                }
                 else if (knobInfo[j].Value < solution[rowIdentities[j]][i] && !knobInfo[j].Forwards)
+                {
                     RGBScreens[j].OnInteract();
+                    yield return new WaitForSeconds(.1f);
+                }
                 Knobs[j].OnInteract();
-                yield return new WaitUntil(() => knobInfo[j].Value == solution[rowIdentities[j]][i]);
+
+                while (true)
+                {
+                    yield return null;
+                    if (Mathf.Abs(knobInfo[j].Value - solution[rowIdentities[j]][i]) < 5f)
+                        Speed[0].OnInteract();
+                    if ((byte) knobInfo[j].Value == solution[rowIdentities[j]][i])
+                        break;
+                }
                 Knobs[j].OnInteractEnded();
+                yield return new WaitForSeconds(.1f);
             }
             Input[i].OnInteract();
             yield return new WaitForSeconds(.1f);
