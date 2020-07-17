@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Assets.SixTen.Scripts;
 using UnityEngine;
+using UnityEngine.Analytics;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
 
@@ -75,7 +76,7 @@ public class SixTenScript : MonoBehaviour
 
     struct KnobInfo
     {
-        public float Value;
+        public byte Value;
         public bool Forwards;
         public bool Slow;
         public Coroutine Coroutine;
@@ -263,14 +264,22 @@ public class SixTenScript : MonoBehaviour
     private IEnumerator Slide(int knob)
     {
         var z = new[] { 150, 75, 0 };
-        knobInfo[knob].Value += knobInfo[knob].Forwards ? 1 : -1;
         do
         {
-            knobInfo[knob].Value = Math.Min(255, Math.Max(0, knobInfo[knob].Value));
-            Knobs[knob].transform.localPosition = new Vector3(1 + knobInfo[knob].Value / 255 * 8, 0.13f, z[knob]);
+            if ((knobInfo[knob].Value == 0 && !knobInfo[knob].Forwards) || (knobInfo[knob].Value == 255 && knobInfo[knob].Forwards))
+                break;
+            if (knobInfo[knob].Forwards)
+            {
+                knobInfo[knob].Value = (byte) (knobInfo[knob].Value + 1);
+                Knobs[knob].transform.localPosition = new Vector3(Knobs[knob].transform.localPosition.x + slideValue, 0.13f, z[knob]);
+            }
+            else
+            {
+                knobInfo[knob].Value = (byte) (knobInfo[knob].Value - 1);
+                Knobs[knob].transform.localPosition = new Vector3(Knobs[knob].transform.localPosition.x - slideValue, 0.13f, z[knob]);
+            }
             RGBValues[knob].text = ((int) knobInfo[knob].Value).ToString();
-            yield return null;
-            knobInfo[knob].Value += (knobInfo[knob].Forwards ? 1 : -1) * ((fast ? 100 : 10) * Time.deltaTime);
+            yield return new WaitForSeconds(fast ? .005f : .1f);
         }
         while (true);
     }
@@ -415,17 +424,18 @@ public class SixTenScript : MonoBehaviour
     {
         Debug.LogFormat(@"[SixTen #{0}] Module was force-solved by TP!", moduleId);
 
+        if (!fast)
+        {
+            Speed[1].OnInteract();
+            yield return new WaitForSeconds(.1f);
+        }
+
         for (var i = 0; i < inputDone.Length; i++)
         {
             if (inputDone[i])
                 continue;
             for (var j = 0; j < 3; j++)
             {
-                if (Mathf.Abs(knobInfo[j].Value - solution[rowIdentities[j]][i]) < 5f)
-                    Speed[0].OnInteract();
-                else
-                    Speed[1].OnInteract();
-                yield return new WaitForSeconds(.1f);
                 if (knobInfo[j].Value > solution[rowIdentities[j]][i] && knobInfo[j].Forwards)
                 {
                     RGBScreens[j].OnInteract();
@@ -436,17 +446,13 @@ public class SixTenScript : MonoBehaviour
                     RGBScreens[j].OnInteract();
                     yield return new WaitForSeconds(.1f);
                 }
+
                 Knobs[j].OnInteract();
 
-                while (true)
-                {
-                    yield return null;
-                    if (Mathf.Abs(knobInfo[j].Value - solution[rowIdentities[j]][i]) < 5f)
-                        Speed[0].OnInteract();
-                    if ((byte) knobInfo[j].Value == solution[rowIdentities[j]][i])
-                        break;
-                }
+                yield return new WaitUntil(() => knobInfo[j].Value == solution[rowIdentities[j]][i]);
+
                 Knobs[j].OnInteractEnded();
+
                 yield return new WaitForSeconds(.1f);
             }
             Input[i].OnInteract();
