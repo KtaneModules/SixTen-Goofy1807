@@ -398,17 +398,35 @@ public class SixTenScript : MonoBehaviour
                 yield break;
             }
             yield return null;
+            var  cNames = new[] { "Red", "Green", "Blue" };
             for (var i = 0; i < values.Length / 3; i++)
             {
                 for (var knobIx = 0; knobIx < 3; knobIx++)
                 {
+                    Debug.LogFormat(@"<SixTen #{0}> {1} knobs initial value: {2}", moduleId, cNames[knobIx], knobInfo[knobIx].Value);
+                    Debug.LogFormat(@"<SixTen #{0}> {1} knobs target value: {2}", moduleId, cNames[knobIx], values[3 * i + knobIx].Value);
+                    if (knobInfo[knobIx].Value == values[3 * i + knobIx].Value)
+                        continue;
                     if (knobInfo[knobIx].Value > values[3 * i + knobIx].Value && knobInfo[knobIx].Forwards)
                         RGBScreens[knobIx].OnInteract();
                     else if (knobInfo[knobIx].Value < values[3 * i + knobIx].Value && !knobInfo[knobIx].Forwards)
                         RGBScreens[knobIx].OnInteract();
                     yield return new WaitForSeconds(.1f);
                     Knobs[knobIx].OnInteract();
-                    yield return new WaitUntil(() => knobInfo[knobIx].Value == values[3 * i + knobIx].Value);
+                    var c = 0;
+                    while (knobInfo[knobIx].Value != values[3 * i + knobIx].Value)
+                    {
+                        yield return null;
+                        c++;
+                        if (c == 500)
+                        {
+                            Debug.LogFormat(@"<SixTen #{0}> Waited for {1} frames on the {2} input, aborting command!", moduleId, c, cNames[knobIx]);
+                            yield break;
+                        }
+                        if (c % 100 == 0)
+                            Debug.LogFormat(@"<SixTen #{0}> Waited for {1} frames on the {2} input", moduleId, c, cNames[knobIx]);
+
+                    };
                     Knobs[knobIx].OnInteractEnded();
                 }
                 var inputIx = Array.IndexOf(inputDone, false);
